@@ -30,6 +30,7 @@
   --wait:#f0b440; --wait-soft:#3a2e10; --ok:#58c995; --ok-soft:#12301f; --plan:#8ea2ff; --plan-soft:#222b55; --bad:#ff8a80; --bad-soft:#3d1a18; --idle:#7d8797;
 }}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--paper);color:var(--ink);font:400 15px/1.5 var(--body);padding-bottom:env(safe-area-inset-bottom,0px)}
 h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
@@ -251,7 +252,7 @@ async function carica() {
 
 async function apri(key) {
   D = JSON.parse(await decifra(key, pacco));
-  $("#gate").hidden = true; $("#app").hidden = false;
+  $("#gate").hidden = true; $("#app").hidden = false; $("#err").textContent = "";
   render(); route();
 }
 
