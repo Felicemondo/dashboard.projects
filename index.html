@@ -274,8 +274,8 @@ const tokPut = (t) => idb("readwrite", (s) => (t ? s.put(t, "gh") : s.delete("gh
 
 // manda una richiesta cifrata come issue del repo: il Mac la legge, la decifra e la esegue
 async function invia(m) {
-  const tok = await tokGet();
-  if (!tok) throw new Error("Collega prima l'invio dal telefono: pagina Script, in fondo.");
+  const tok = (await tokGet()) || D.invio_token;
+  if (!tok) throw new Error("Invio non collegato: manca il token GitHub (pagina Script, in fondo).");
   const msg = { ...m, id: crypto.randomUUID(), ts: new Date().toISOString() };
   const body = JSON.stringify(await cifra(KEY, pacco.salt, JSON.stringify(msg), pacco.iter));
   const r = await fetch(REPO_API, { method: "POST", headers: { Authorization: "Bearer " + tok, Accept: "application/vnd.github+json", "Content-Type": "application/json" }, body: JSON.stringify({ title: "regia", body }) });
@@ -438,7 +438,7 @@ function render() {
   sel.innerHTML = '<option value="">Lo decide la regia</option>' + D.progetti.map((p) => `<option value="${esc(p.nome)}">${esc(p.nome)}</option>`).join("");
   if ([...sel.options].some((o) => o.value === prev)) sel.value = prev;
   renderReqs();
-  tokGet().then((t) => { const s = $("#tokState"); s.textContent = t ? "Collegato" : "Da collegare"; s.className = "pill " + (t ? "p-ok" : "p-wait"); });
+  tokGet().then((t) => { t = t || D.invio_token; const s = $("#tokState"); s.textContent = t ? "Collegato" : "Da collegare"; s.className = "pill " + (t ? "p-ok" : "p-wait"); });
 
   // idee
   const idee = [...D.idee.map((i) => ({ ...i, progetto: "Idee libere" })), ...D.progetti.flatMap((p) => p.idee.map((i) => ({ ...i, progetto: p.nome })))];
