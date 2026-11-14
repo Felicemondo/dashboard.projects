@@ -130,6 +130,14 @@ details.done-list summary{cursor:pointer;font-size:13px;color:var(--muted);paddi
 .gate label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:500}
 .gate label.row{flex-direction:row;align-items:center;gap:8px;font-weight:400}
 .err{color:var(--bad);font-size:14px;min-height:1.2em}
+.panel label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:500;min-width:0}
+.panel select,.panel textarea,.panel input[type=password],.panel input[type=text]{font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 11px;width:100%}
+.panel textarea{resize:vertical}
+.formrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.note{font-size:13px;color:var(--muted)}
+.reply{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.out{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--paper);border-radius:8px;padding:10px;font-size:14px;max-height:340px;overflow:auto}
+@media (max-width:760px){.formrow{grid-template-columns:1fr}}
 
 @media (max-width:760px){
   .tiles{grid-template-columns:repeat(2,1fr)}
@@ -157,6 +165,7 @@ details.done-list summary{cursor:pointer;font-size:13px;color:var(--muted);paddi
     <div class="bar1"><div class="brand">Ufficio<small>FELICE MONDO</small></div><div class="fresh" id="fresh"></div></div>
     <nav class="tabs" id="tabs">
       <a href="#ufficio">Oggi <span class="n" id="nYou" hidden></span></a>
+      <a href="#richieste">Richieste <span class="n" id="nReq" hidden></span></a>
       <a href="#calendario">Calendario</a>
       <a href="#piano">Milestone e backlog</a>
       <a href="#progetti">Progetti</a>
@@ -178,11 +187,20 @@ details.done-list summary{cursor:pointer;font-size:13px;color:var(--muted);paddi
     <div class="panel"><header><h2>Aspettano te</h2></header><ul class="list" id="youList"></ul></div>
     <div class="panel"><header><h2>Prossimi 7 giorni</h2><a href="#calendario">Calendario</a></header><ul class="list" id="weekList"></ul></div>
   </div>
-  <div class="panel">
-    <header><h2>Richieste alla regia</h2></header>
-    <p class="lede">Per chiedere un lavoro nuovo o aggiungere un'idea usa la Regia: la squadra la prende al prossimo giro.</p>
-    <div class="cta"><a class="btn" href="https://claude.ai/artifact/Vy448G1343xtHgiJugE7bC" target="_blank" rel="noopener">Apri la Regia</a></div>
-  </div>
+  <form class="panel" id="compose">
+    <header><h2>Chiedi alla regia</h2></header>
+    <div class="formrow">
+      <label for="cTipo">Tipo<select id="cTipo"><option value="richiesta">Richiesta di lavoro</option><option value="idea">Idea da salvare</option></select></label>
+      <label for="cProj">Progetto<select id="cProj"></select></label>
+    </div>
+    <label for="cTesto">Cosa ti serve<textarea id="cTesto" rows="4" maxlength="4000" placeholder="Es. Prepara il PED della prossima settimana per Nozze in ordine" required></textarea></label>
+    <div class="cta"><button class="primary" type="submit" id="cSend">Invia</button><span class="note" id="cMsg" aria-live="polite"></span></div>
+  </form>
+</section>
+
+<section data-view="richieste">
+  <p class="lede">Il Mac controlla le richieste ogni 15 minuti e le esegue una alla volta. Qui vedi a che punto sono e il riepilogo della regia.</p>
+  <div id="reqs" style="display:flex;flex-direction:column;gap:12px"></div>
 </section>
 
 <section data-view="calendario">
@@ -209,24 +227,32 @@ details.done-list summary{cursor:pointer;font-size:13px;color:var(--muted);paddi
 <section data-view="progetti"><div class="projgrid" id="projs"></div></section>
 
 <section data-view="idee">
-  <div class="cta"><a class="btn" href="https://claude.ai/artifact/Vy448G1343xtHgiJugE7bC" target="_blank" rel="noopener">Aggiungi un'idea nella Regia</a></div>
+  <p class="lede">Per aggiungere un'idea usa "Chiedi alla regia" nella pagina Oggi, tipo "Idea da salvare".</p>
   <div class="panel"><ul class="list" id="ideas"></ul></div>
 </section>
 
 <section data-view="script">
   <p class="lede">Attività che girano da sole sul Mac. Se il Mac è spento o in stop, non girano.</p>
   <div id="jobs" style="display:flex;flex-direction:column;gap:14px"></div>
+  <form class="panel" id="tokForm">
+    <header><h2>Invio dal telefono</h2><span class="pill" id="tokState"></span></header>
+    <p class="lede">Serve un token GitHub che può solo creare issue nel repository della dashboard. Resta salvato solo su questo dispositivo.</p>
+    <label for="tok">Token GitHub<input type="password" id="tok" autocomplete="off" placeholder="github_pat_…"></label>
+    <div class="cta"><button class="primary" type="submit">Salva token</button><button type="button" id="tokDel">Rimuovi</button><button type="button" id="lock">Blocca la dashboard</button></div>
+  </form>
 </section>
 </main>
 </div>
 
 <script type="module">
-import { deriva, decifra } from "./cripto.js";
+import { deriva, decifra, cifra } from "./cripto.js";
 
+const REPO_API = "https://api.github.com/repos/Felicemondo/dashboard.projects/issues";
+let KEY = null;
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const safeUrl = (u) => (/^https:\/\//i.test(u || "") ? u : "");
-const VIEWS = ["ufficio", "calendario", "piano", "progetti", "idee", "script"];
+const VIEWS = ["ufficio", "richieste", "calendario", "piano", "progetti", "idee", "script"];
 const IDB = "ufficio", STORE = "chiavi";
 let D = null, pacco = null, mese = null, giorno = null;
 
@@ -243,6 +269,22 @@ function idb(mode, fn) {
 }
 const keyGet = () => idb("readonly", (s) => s.get("k"));
 const keyPut = (k) => idb("readwrite", (s) => s.put(k, "k"));
+const tokGet = () => idb("readonly", (s) => s.get("gh"));
+const tokPut = (t) => idb("readwrite", (s) => (t ? s.put(t, "gh") : s.delete("gh")));
+
+// manda una richiesta cifrata come issue del repo: il Mac la legge, la decifra e la esegue
+async function invia(m) {
+  const tok = await tokGet();
+  if (!tok) throw new Error("Collega prima l'invio dal telefono: pagina Script, in fondo.");
+  const msg = { ...m, id: crypto.randomUUID(), ts: new Date().toISOString() };
+  const body = JSON.stringify(await cifra(KEY, pacco.salt, JSON.stringify(msg), pacco.iter));
+  const r = await fetch(REPO_API, { method: "POST", headers: { Authorization: "Bearer " + tok, Accept: "application/vnd.github+json", "Content-Type": "application/json" }, body: JSON.stringify({ title: "regia", body }) });
+  if (r.status === 401 || r.status === 403 || r.status === 404) throw new Error("Token non valido o senza permesso sulle issue.");
+  if (!r.ok) throw new Error("GitHub non ha accettato la richiesta (" + r.status + "). Riprova.");
+  inviate.unshift({ ...msg, stato: "inviata", esito: "" });
+  renderReqs();
+}
+const inviate = [];
 
 async function carica() {
   const r = await fetch("data.enc.json?t=" + Date.now(), { cache: "no-store" });
@@ -252,6 +294,7 @@ async function carica() {
 
 async function apri(key) {
   D = JSON.parse(await decifra(key, pacco));
+  KEY = key;
   $("#gate").hidden = true; $("#app").hidden = false; $("#err").textContent = "";
   render(); route();
 }
@@ -335,9 +378,14 @@ function render() {
 
   // aspettano te
   const you = [];
-  for (const p of D.progetti) for (const a of p.stato.attesa || []) you.push(`<li><span class="dot wait"></span><div class="main">${esc(a)}<div class="sub">${esc(p.nome)}</div></div></li>`);
-  const daApprovare = P.filter((p) => p.cls === "wait" && p.data >= t);
-  if (daApprovare.length) you.push(`<li><span class="dot wait"></span><div class="main">${daApprovare.length} post del PED da approvare<div class="sub">Scrivi "ok settimana" alla regia</div></div></li>`);
+  for (const p of D.progetti) for (const a of p.stato.attesa || []) you.push(`<li><span class="dot wait"></span><div class="main">${esc(a)}<div class="sub">${esc(p.nome)}</div>
+    <details class="reply"><summary class="note" style="cursor:pointer">Rispondi</summary><div class="reply"><textarea rows="3" maxlength="4000" aria-label="Risposta"></textarea>
+    <div class="cta"><button type="button" class="primary" data-act="rispondi" data-proj="${esc(p.nome)}" data-rif="${esc(a)}">Invia risposta</button><span class="note" aria-live="polite"></span></div></div></details></div></li>`);
+  for (const p of D.progetti) {
+    const n = P.filter((x) => x.progetto === p.nome && x.cls === "wait" && x.data >= t).length;
+    if (n) you.push(`<li><span class="dot wait"></span><div class="main">${n} post del PED da approvare<div class="sub">${esc(p.nome)} · controllali nel Calendario prima di approvare</div>
+      <div class="cta" style="margin-top:8px"><button type="button" class="primary" data-act="ped" data-proj="${esc(p.nome)}">Approva il PED</button><span class="note" aria-live="polite"></span></div></div></li>`);
+  }
   const prob = P.filter((p) => p.cls === "bad" && p.data >= addDays(t, -7));
   for (const p of prob) you.push(postLi(p, true));
   $("#youList").innerHTML = you.join("") || '<li class="empty">Niente in attesa. Bene così.</li>';
@@ -385,6 +433,13 @@ function render() {
       ${sez("In attesa di te", s.attesa)}${sez("Prossimi passi", (s.backlog || []).filter((x) => !x.fatto))}${sez("Fatto", s.fatto, 3)}${sez("Decisioni", s.decisioni, 3)}</div>`;
   }).join("") || '<p class="empty">Nessun progetto in ~/Progetti.</p>';
 
+  // modulo richieste
+  const sel = $("#cProj"), prev = sel.value;
+  sel.innerHTML = '<option value="">Lo decide la regia</option>' + D.progetti.map((p) => `<option value="${esc(p.nome)}">${esc(p.nome)}</option>`).join("");
+  if ([...sel.options].some((o) => o.value === prev)) sel.value = prev;
+  renderReqs();
+  tokGet().then((t) => { const s = $("#tokState"); s.textContent = t ? "Collegato" : "Da collegare"; s.className = "pill " + (t ? "p-ok" : "p-wait"); });
+
   // idee
   const idee = [...D.idee.map((i) => ({ ...i, progetto: "Idee libere" })), ...D.progetti.flatMap((p) => p.idee.map((i) => ({ ...i, progetto: p.nome })))];
   $("#ideas").innerHTML = idee.map((i) => `<li><span class="dot plan"></span><div class="main"><b>${esc(i.titolo)}</b> <span class="chip">${esc(i.progetto)}</span><div class="sub">${esc(i.estratto)}</div></div></li>`).join("")
@@ -413,8 +468,32 @@ function renderCal() {
   $("#dayList").innerHTML = sel.map((p) => postLi(p, !giorno)).join("") || `<li class="empty">${giorno ? "Nessun post in questo giorno." : "Nessun post in questo mese."}</li>`;
 }
 
+function renderReqs() {
+  if (!D) return;
+  const REQ = { inviata: ["Inviata, il Mac la prende entro 15 minuti", "wait"], ricevuta: ["Ricevuta, in coda", "plan"], in_lavorazione: ["La regia ci lavora", "plan"], fatta: ["Fatta", "ok"], errore: ["Errore", "bad"] };
+  const TIPO_R = { richiesta: "Richiesta", idea: "Idea", risposta: "Risposta", "approva-ped": "Approvazione PED" };
+  const dalMac = D.richieste || [], ids = new Set(dalMac.map((r) => r.id));
+  const tutte = [...inviate.filter((r) => !ids.has(r.id)), ...dalMac];
+  const aperte = tutte.filter((r) => r.stato !== "fatta" && r.stato !== "errore").length;
+  $("#nReq").textContent = aperte; $("#nReq").hidden = !aperte;
+  $("#reqs").innerHTML = tutte.map((r) => {
+    const [lab, cls] = REQ[r.stato] || [r.stato, "idle"];
+    const quando = new Date(r.ts).toLocaleString("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    return `<div class="panel"><header><h3>${esc(TIPO_R[r.tipo] || r.tipo)} · ${esc(r.progetto || "regia")}</h3><span class="pill p-${cls}">${esc(lab)}</span></header>
+      <span class="note">${esc(quando)}${r.rif ? " · su: " + esc(r.rif) : ""}</span><p>${esc(r.testo)}</p>
+      ${r.esito ? `<div><span class="k">Riepilogo della regia</span><div class="out">${esc(r.esito)}</div></div>` : ""}</div>`;
+  }).join("") || '<p class="empty">Nessuna richiesta. Scrivine una nella pagina Oggi.</p>';
+}
+
+async function manda(btn, msg, nota) {
+  btn.disabled = true; nota.textContent = "Invio…";
+  try { await invia(msg); nota.textContent = "Inviata. La vedi in Richieste."; return true; }
+  catch (e) { nota.textContent = e.message; return false; }
+  finally { btn.disabled = false; }
+}
+
 function renderJobs() {
-  const DESCR = { "coda-social": "Pubblica sui social i post approvati del PED", "dashboard": "Aggiorna questa dashboard" };
+  const DESCR = { "coda-social": "Pubblica sui social i post approvati del PED", "dashboard": "Aggiorna questa dashboard", "inbox": "Riceve ed esegue le richieste dal telefono" };
   $("#jobs").innerHTML = D.attivita.map((j) => {
     const bad = jobProblem(j);
     const stato = !j.attivo ? ["Non attiva", "bad"] : bad ? ["Da controllare", "bad"] : ["Ok", "ok"];
@@ -436,6 +515,33 @@ $("#allMonth").addEventListener("click", () => { giorno = null; renderCal(); });
 const shift = (n) => { const [y, m] = mese.split("-").map(Number); const d = new Date(y, m - 1 + n, 1); mese = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; giorno = null; renderCal(); };
 $("#prevM").addEventListener("click", () => shift(-1));
 $("#nextM").addEventListener("click", () => shift(1));
+$("#compose").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const testo = $("#cTesto").value.trim(); if (!testo) return;
+  if (await manda($("#cSend"), { tipo: $("#cTipo").value, progetto: $("#cProj").value, testo }, $("#cMsg"))) $("#cTesto").value = "";
+});
+$("#youList").addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const nota = b.parentElement.querySelector(".note");
+  if (b.dataset.act === "rispondi") {
+    const ta = b.closest(".reply").querySelector("textarea"), testo = ta.value.trim();
+    if (!testo) { nota.textContent = "Scrivi prima la risposta."; return; }
+    if (await manda(b, { tipo: "risposta", progetto: b.dataset.proj, rif: b.dataset.rif, testo }, nota)) ta.value = "";
+  }
+  if (b.dataset.act === "ped") {
+    if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Conferma: approva e pubblica alle date previste"; return; }
+    b.dataset.armed = ""; b.textContent = "Approva il PED";
+    await manda(b, { tipo: "approva-ped", progetto: b.dataset.proj, testo: "ok PED" }, nota);
+  }
+});
+$("#tokForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const t = $("#tok").value.trim(); if (!t) return;
+  await tokPut(t); $("#tok").value = ""; render();
+});
+$("#tokDel").addEventListener("click", async () => { await tokPut(null); render(); });
+$("#lock").addEventListener("click", async () => { await idb("readwrite", (s) => s.delete("k")); location.reload(); });
+
 // torna in primo piano: ricarica i dati
 document.addEventListener("visibilitychange", async () => {
   if (document.visibilityState !== "visible" || !D) return;
