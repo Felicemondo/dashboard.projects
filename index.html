@@ -199,7 +199,7 @@ details.done-list summary{cursor:pointer;font-size:13px;color:var(--muted);paddi
 </section>
 
 <section data-view="richieste">
-  <p class="lede">Il Mac controlla le richieste ogni 15 minuti e le esegue una alla volta. Qui vedi a che punto sono e il riepilogo della regia.</p>
+  <p class="lede">Il Mac controlla le richieste ogni 2 minuti, se è acceso, e le esegue una alla volta. Qui vedi a che punto sono e il riepilogo della regia.</p>
   <div id="reqs" style="display:flex;flex-direction:column;gap:12px"></div>
 </section>
 
@@ -285,6 +285,22 @@ async function invia(m) {
   renderReqs();
 }
 const inviate = [];
+
+// legge da GitHub le richieste inviate da qualsiasi dispositivo e non ancora prese dal Mac
+async function syncInviate() {
+  const tok = (await tokGet()) || D.invio_token;
+  if (!tok) return;
+  try {
+    const r = await fetch(REPO_API + "?state=all&per_page=30&_=" + Date.now(), { headers: { Authorization: "Bearer " + tok, Accept: "application/vnd.github+json" } });
+    if (!r.ok) return;
+    for (const i of await r.json()) {
+      if (i.title !== "regia" || inviate.some((x) => x.issue === i.number)) continue;
+      try { const m = JSON.parse(await decifra(KEY, JSON.parse(i.body))); inviate.push({ ...m, issue: i.number, stato: "inviata", esito: "" }); } catch { /* non nostra */ }
+    }
+    inviate.sort((a, b) => String(b.ts).localeCompare(String(a.ts)));
+    renderReqs();
+  } catch { /* offline: restano i dati del Mac */ }
+}
 
 async function carica() {
   const r = await fetch("data.enc.json?t=" + Date.now(), { cache: "no-store" });
@@ -437,7 +453,7 @@ function render() {
   const sel = $("#cProj"), prev = sel.value;
   sel.innerHTML = '<option value="">Lo decide la regia</option>' + D.progetti.map((p) => `<option value="${esc(p.nome)}">${esc(p.nome)}</option>`).join("");
   if ([...sel.options].some((o) => o.value === prev)) sel.value = prev;
-  renderReqs();
+  renderReqs(); syncInviate();
   tokGet().then((t) => { t = t || D.invio_token; const s = $("#tokState"); s.textContent = t ? "Collegato" : "Da collegare"; s.className = "pill " + (t ? "p-ok" : "p-wait"); });
 
   // idee
@@ -470,7 +486,7 @@ function renderCal() {
 
 function renderReqs() {
   if (!D) return;
-  const REQ = { inviata: ["Inviata, il Mac la prende entro 15 minuti", "wait"], ricevuta: ["Ricevuta, in coda", "plan"], in_lavorazione: ["La regia ci lavora", "plan"], fatta: ["Fatta", "ok"], errore: ["Errore", "bad"] };
+  const REQ = { inviata: ["Inviata, il Mac la prende entro 2 minuti", "wait"], ricevuta: ["Ricevuta, in coda", "plan"], in_lavorazione: ["La regia ci lavora", "plan"], fatta: ["Fatta", "ok"], errore: ["Errore", "bad"] };
   const TIPO_R = { richiesta: "Richiesta", idea: "Idea", risposta: "Risposta", "approva-ped": "Approvazione PED" };
   const dalMac = D.richieste || [], ids = new Set(dalMac.map((r) => r.id));
   const tutte = [...inviate.filter((r) => !ids.has(r.id)), ...dalMac];
@@ -542,11 +558,13 @@ $("#tokForm").addEventListener("submit", async (e) => {
 $("#tokDel").addEventListener("click", async () => { await tokPut(null); render(); });
 $("#lock").addEventListener("click", async () => { await idb("readwrite", (s) => s.delete("k")); location.reload(); });
 
-// torna in primo piano: ricarica i dati
-document.addEventListener("visibilitychange", async () => {
+// aggiorna quando la pagina torna in primo piano e ogni minuto mentre è aperta
+async function aggiorna() {
   if (document.visibilityState !== "visible" || !D) return;
-  try { const nuovo = await carica(); if (nuovo.ct !== pacco.ct) { pacco = nuovo; const s = await keyGet(); if (s && s.salt === pacco.salt) await apri(s.key); } } catch {}
-});
+  try { const nuovo = await carica(); if (nuovo.ct !== pacco.ct && nuovo.salt === pacco.salt) { pacco = nuovo; await apri(KEY); } else syncInviate(); } catch {}
+}
+document.addEventListener("visibilitychange", aggiorna);
+setInterval(aggiorna, 60000);
 boot();
 </script>
 </body>
