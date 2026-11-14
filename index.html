@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#f2f3f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#11141a" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ufficio">
+<title>Ufficio Felice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: l'ufficio di una casa di produzione in tasca. Barra delle sezioni fissa in alto, una colonna sul telefono, due sul computer. Stessa famiglia visiva della Regia. */
+:root{
+  --paper:#f2f3f0; --surface:#ffffff; --ink:#151a22; --muted:#5d6675; --line:#d9dcd6;
+  --accent:#2440d8; --accent-ink:#ffffff; --accent-soft:#e6eafc;
+  --wait:#a86c00; --wait-soft:#fbf0d6; --ok:#1d7f55; --ok-soft:#dff3e8; --plan:#2440d8; --plan-soft:#e6eafc; --bad:#b3261e; --bad-soft:#fbe4e2; --idle:#7d8797;
+  --display:"Bricolage Grotesque","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  color-scheme:dark;
+  --paper:#11141a; --surface:#1a1f28; --ink:#eceef2; --muted:#9aa3b2; --line:#2c3340;
+  --accent:#8ea2ff; --accent-ink:#0d1330; --accent-soft:#222b55;
+  --wait:#f0b440; --wait-soft:#3a2e10; --ok:#58c995; --ok-soft:#12301f; --plan:#8ea2ff; --plan-soft:#222b55; --bad:#ff8a80; --bad-soft:#3d1a18; --idle:#7d8797;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 15px/1.5 var(--body);padding-bottom:env(safe-area-inset-bottom,0px)}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:26px;font-weight:700} h2{font-size:18px;font-weight:700} h3{font-size:15px;font-weight:600;font-family:var(--body)}
+p{margin:0}
+a{color:var(--accent)}
+button{font:500 14px var(--body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 14px;cursor:pointer;min-height:40px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--surface);z-index:20}
+
+/* barra */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar1{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px 4px}
+.brand{font:700 18px var(--display)}
+.brand small{font:400 11px var(--mono);color:var(--muted);letter-spacing:.04em;margin-left:6px}
+.fresh{font:500 12px var(--mono);color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.fresh.old{color:var(--bad)}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-block:4px 8px}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs a{flex:none;padding:7px 12px;border-radius:99px;text-decoration:none;color:var(--ink);font-weight:500;font-size:14px;display:flex;gap:6px;align-items:center}
+nav.tabs a[aria-current="page"]{background:var(--ink);color:var(--paper)}
+nav.tabs .n{font:500 11px var(--mono);background:var(--wait);color:var(--surface);border-radius:99px;padding:0 6px;line-height:18px}
+
+main{padding-block:18px 48px}
+section[data-view]{display:none;flex-direction:column;gap:18px}
+section[data-view].on{display:flex}
+.lede{color:var(--muted);max-width:62ch;font-size:14px}
+.k{font:500 11px var(--mono);color:var(--muted);letter-spacing:.07em;text-transform:uppercase}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:2px;text-decoration:none;color:var(--ink)}
+.tile b{font:700 30px/1 var(--display);font-variant-numeric:tabular-nums}
+.tile span{font-size:13px;color:var(--muted)}
+.tile.wait b{color:var(--wait)} .tile.bad b{color:var(--bad)} .tile.plan b{color:var(--plan)} .tile.ok b{color:var(--ok)}
+
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.panel>header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.list li{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);min-width:0}
+.list li:first-child{border-top:0}
+.list .main{flex:1;min-width:0;overflow-wrap:anywhere}
+.list .sub{font-size:13px;color:var(--muted)}
+.when{font:500 12px var(--mono);color:var(--muted);flex:none;width:54px;font-variant-numeric:tabular-nums;padding-top:2px}
+.pill{font:500 12px var(--body);padding:1px 8px;border-radius:99px;white-space:nowrap;flex:none;border:1px solid currentColor}
+.p-ok{color:var(--ok);background:var(--ok-soft)} .p-plan{color:var(--plan);background:var(--plan-soft)} .p-wait{color:var(--wait);background:var(--wait-soft)} .p-bad{color:var(--bad);background:var(--bad-soft)} .p-idle{color:var(--idle)}
+.chip{font:500 11px var(--mono);color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;margin-top:7px;background:var(--idle)}
+.dot.ok{background:var(--ok)} .dot.plan{background:var(--plan)} .dot.wait{background:var(--wait)} .dot.bad{background:var(--bad)}
+
+/* calendario */
+.calhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.calhead h2{text-transform:capitalize}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal .dow{font:500 11px var(--mono);color:var(--muted);text-align:center;padding-bottom:2px}
+.cal button.day{min-height:52px;padding:5px 3px;border-radius:8px;display:flex;flex-direction:column;align-items:center;gap:4px;font:500 13px var(--mono);font-variant-numeric:tabular-nums}
+.cal button.day.out{opacity:.35}
+.cal button.day.today{border-color:var(--ink)}
+.cal button.day[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.cal .dots{display:flex;gap:2px;flex-wrap:wrap;justify-content:center}
+.cal .dots i{width:6px;height:6px;border-radius:50%;background:var(--idle)}
+.cal .dots i.ok{background:var(--ok)} .cal .dots i.plan{background:var(--plan)} .cal .dots i.wait{background:var(--wait)} .cal .dots i.bad{background:var(--bad)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.legend span{display:flex;gap:5px;align-items:center}
+.legend i{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+/* piano */
+.timeline{list-style:none;margin:0;padding:0 0 0 14px;border-left:2px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.timeline li{position:relative;display:flex;flex-direction:column;gap:2px}
+.timeline li::before{content:"";position:absolute;left:-21px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--plan)}
+.timeline li.done::before{background:var(--ok);border-color:var(--ok)}
+.timeline li.late::before{border-color:var(--bad)}
+.timeline .d{font:500 12px var(--mono);color:var(--muted)}
+.timeline li.done .t{color:var(--muted);text-decoration:line-through}
+.check{width:16px;height:16px;border:1.5px solid var(--muted);border-radius:4px;flex:none;margin-top:3px}
+.check.on{background:var(--ok);border-color:var(--ok)}
+details.done-list summary{cursor:pointer;font-size:13px;color:var(--muted);padding-top:6px}
+
+/* script */
+.job{display:flex;flex-direction:column;gap:8px}
+.job header{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.log{font:400 12px/1.5 var(--mono);background:var(--paper);border-radius:8px;padding:10px;overflow-x:auto;white-space:pre;margin:0;color:var(--muted)}
+
+.projgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.mini{display:flex;flex-direction:column;gap:4px}
+.mini ul{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:3px}
+.cta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.cta a.btn{display:inline-flex;align-items:center;min-height:40px;padding:9px 14px;border-radius:8px;background:var(--accent);color:var(--accent-ink);text-decoration:none;font-weight:500}
+
+/* blocco */
+.gate{min-height:100vh;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-left,0px))}
+.gate form{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:14px;width:min(380px,100%)}
+.gate input[type=password]{font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:11px 12px;width:100%}
+.gate label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:500}
+.gate label.row{flex-direction:row;align-items:center;gap:8px;font-weight:400}
+.err{color:var(--bad);font-size:14px;min-height:1.2em}
+
+@media (max-width:760px){
+  .tiles{grid-template-columns:repeat(2,1fr)}
+  .cols{grid-template-columns:1fr}
+  h1{font-size:23px}
+}
+@media (prefers-reduced-motion:no-preference){nav.tabs a{transition:background .15s}}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <form id="unlock">
+    <div><h1>Ufficio</h1><p class="lede">I dati sono cifrati. Inserisci la password della dashboard.</p></div>
+    <label for="pw">Password<input type="password" id="pw" autocomplete="current-password" required></label>
+    <label class="row" for="remember"><input type="checkbox" id="remember" checked> Ricorda su questo dispositivo</label>
+    <button class="primary" type="submit" id="go">Apri</button>
+    <p class="err" id="err" aria-live="polite"></p>
+  </form>
+</div>
+
+<div id="app" hidden>
+<header class="top">
+  <div class="wrap">
+    <div class="bar1"><div class="brand">Ufficio<small>FELICE MONDO</small></div><div class="fresh" id="fresh"></div></div>
+    <nav class="tabs" id="tabs">
+      <a href="#ufficio">Oggi <span class="n" id="nYou" hidden></span></a>
+      <a href="#calendario">Calendario</a>
+      <a href="#piano">Milestone e backlog</a>
+      <a href="#progetti">Progetti</a>
+      <a href="#idee">Idee</a>
+      <a href="#script">Script <span class="n" id="nBad" hidden></span></a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<section data-view="ufficio">
+  <div class="tiles">
+    <a class="tile wait" href="#ufficio"><b id="tYou">0</b><span>Aspettano te</span></a>
+    <a class="tile plan" href="#calendario"><b id="tPost">0</b><span>Post nei prossimi 7 giorni</span></a>
+    <a class="tile" href="#piano"><b id="tMile">0</b><span>Milestone aperte</span></a>
+    <a class="tile" id="tBadTile" href="#script"><b id="tBad">0</b><span>Script con problemi</span></a>
+  </div>
+  <div class="cols">
+    <div class="panel"><header><h2>Aspettano te</h2></header><ul class="list" id="youList"></ul></div>
+    <div class="panel"><header><h2>Prossimi 7 giorni</h2><a href="#calendario">Calendario</a></header><ul class="list" id="weekList"></ul></div>
+  </div>
+  <div class="panel">
+    <header><h2>Richieste alla regia</h2></header>
+    <p class="lede">Per chiedere un lavoro nuovo o aggiungere un'idea usa la Regia: la squadra la prende al prossimo giro.</p>
+    <div class="cta"><a class="btn" href="https://claude.ai/artifact/Vy448G1343xtHgiJugE7bC" target="_blank" rel="noopener">Apri la Regia</a></div>
+  </div>
+</section>
+
+<section data-view="calendario">
+  <div class="calhead">
+    <button type="button" id="prevM" aria-label="Mese precedente">‹</button>
+    <h2 id="monthLabel"></h2>
+    <button type="button" id="nextM" aria-label="Mese successivo">›</button>
+  </div>
+  <div class="legend">
+    <span><i style="background:var(--ok)"></i>Pubblicato</span><span><i style="background:var(--plan)"></i>Programmato</span>
+    <span><i style="background:var(--wait)"></i>Da approvare</span><span><i style="background:var(--bad)"></i>Problema</span>
+  </div>
+  <div class="cal" id="cal"></div>
+  <div class="panel"><header><h2 id="dayLabel">Il mese</h2><button type="button" id="allMonth" hidden>Tutto il mese</button></header><ul class="list" id="dayList"></ul></div>
+</section>
+
+<section data-view="piano">
+  <div class="cols">
+    <div class="panel"><header><h2>Milestone</h2></header><ul class="timeline" id="miles"></ul></div>
+    <div class="panel"><header><h2>Backlog</h2></header><div id="backlog" style="display:flex;flex-direction:column;gap:14px"></div></div>
+  </div>
+</section>
+
+<section data-view="progetti"><div class="projgrid" id="projs"></div></section>
+
+<section data-view="idee">
+  <div class="cta"><a class="btn" href="https://claude.ai/artifact/Vy448G1343xtHgiJugE7bC" target="_blank" rel="noopener">Aggiungi un'idea nella Regia</a></div>
+  <div class="panel"><ul class="list" id="ideas"></ul></div>
+</section>
+
+<section data-view="script">
+  <p class="lede">Attività che girano da sole sul Mac. Se il Mac è spento o in stop, non girano.</p>
+  <div id="jobs" style="display:flex;flex-direction:column;gap:14px"></div>
+</section>
+</main>
+</div>
+
+<script type="module">
+import { deriva, decifra } from "./cripto.js";
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const safeUrl = (u) => (/^https:\/\//i.test(u || "") ? u : "");
+const VIEWS = ["ufficio", "calendario", "piano", "progetti", "idee", "script"];
+const IDB = "ufficio", STORE = "chiavi";
+let D = null, pacco = null, mese = null, giorno = null;
+
+/* ---------- chiave ricordata (IndexedDB, chiave non estraibile) ---------- */
+function idb(mode, fn) {
+  return new Promise((res) => {
+    try {
+      const r = indexedDB.open(IDB, 1);
+      r.onupgradeneeded = () => r.result.createObjectStore(STORE);
+      r.onsuccess = () => { const tx = r.result.transaction(STORE, mode); const q = fn(tx.objectStore(STORE)); tx.oncomplete = () => res(q && q.result); tx.onerror = () => res(null); };
+      r.onerror = () => res(null);
+    } catch { res(null); }
+  });
+}
+const keyGet = () => idb("readonly", (s) => s.get("k"));
+const keyPut = (k) => idb("readwrite", (s) => s.put(k, "k"));
+
+async function carica() {
+  const r = await fetch("data.enc.json?t=" + Date.now(), { cache: "no-store" });
+  if (!r.ok) throw new Error("dati non trovati");
+  return r.json();
+}
+
+async function apri(key) {
+  D = JSON.parse(await decifra(key, pacco));
+  $("#gate").hidden = true; $("#app").hidden = false;
+  render(); route();
+}
+
+async function boot() {
+  try { pacco = await carica(); } catch { $("#err").textContent = "I dati non sono ancora stati pubblicati. Riprova tra qualche minuto."; return; }
+  const saved = await keyGet();
+  if (saved && saved.salt === pacco.salt) { try { await apri(saved.key); return; } catch { /* chiave vecchia: chiede la password */ } }
+  $("#pw").focus();
+}
+
+$("#unlock").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!pacco) return;
+  const btn = $("#go"); btn.disabled = true; $("#err").textContent = "Apro…";
+  try {
+    const key = await deriva($("#pw").value, pacco.salt, pacco.iter);
+    await apri(key);
+    if ($("#remember").checked) await keyPut({ key, salt: pacco.salt });
+    $("#pw").value = "";
+  } catch { $("#err").textContent = "Password sbagliata."; }
+  btn.disabled = false;
+});
+
+/* ---------- utilità ---------- */
+const oggi = () => ymd(new Date());
+function ymd(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+const addDays = (s, n) => { const d = new Date(s + "T12:00"); d.setDate(d.getDate() + n); return ymd(d); };
+const fmtDay = (s) => new Date(s + "T12:00").toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
+const CANALE = { ig: "Instagram", fb: "Facebook" };
+const TIPO = { post: "post", carosello: "carosello", storia: "storia", reel: "reel", video: "video" };
+const STATO = {
+  pubblicato: ["Pubblicato", "ok"], approvato: ["Programmato", "plan"], bozza: ["Da approvare", "wait"],
+  errore: ["Errore", "bad"], bloccato: ["Bloccato", "bad"], scaduto: ["Scaduto", "bad"], annullato: ["Annullato", "idle"],
+};
+const st = (s) => STATO[s] || [s || "?", "idle"];
+
+// raggruppa le righe della coda: stesso contenuto e stesso orario = un post su più canali
+function posts() {
+  const m = new Map();
+  for (const p of D.progetti) for (const r of p.post) {
+    const k = p.id + "|" + r.quando + "|" + r.cartella;
+    if (!m.has(k)) m.set(k, { progetto: p.nome, quando: r.quando, data: r.quando.slice(0, 10), ora: r.quando.slice(11, 16), titolo: titolo(r.cartella), tipo: TIPO[r.comando.split("-")[1]] || r.comando, canali: [] });
+    m.get(k).canali.push({ canale: CANALE[r.comando.split("-")[0]] || r.comando, stato: r.stato, esito: r.esito });
+  }
+  for (const p of m.values()) {
+    const ord = ["bad", "wait", "plan", "ok", "idle"];
+    p.cls = p.canali.map((c) => st(c.stato)[1]).sort((a, b) => ord.indexOf(a) - ord.indexOf(b))[0];
+  }
+  return [...m.values()].sort((a, b) => a.quando.localeCompare(b.quando));
+}
+const titolo = (cartella) => (cartella.split("/").pop() || "").replace(/^\d{4}-\d{2}-\d{2}_/, "").replace(/-/g, " ");
+
+function postLi(p, conData) {
+  const canali = p.canali.map((c) => {
+    const [lab, cls] = st(c.stato), url = safeUrl(c.esito);
+    const extra = !url && c.esito && cls === "bad" ? ` · ${esc(c.esito)}` : "";
+    return `${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(c.canale)}</a>` : esc(c.canale)} <span class="pill p-${cls}">${lab}</span>${extra}`;
+  }).join("<br>");
+  return `<li><span class="dot ${p.cls}"></span><span class="when">${conData ? esc(fmtDay(p.data)) + "<br>" : ""}${esc(p.ora)}</span>
+    <div class="main"><b style="text-transform:capitalize">${esc(p.titolo)}</b> <span class="chip">${esc(p.tipo)}</span><div class="sub">${esc(p.progetto)}</div><div class="sub">${canali}</div></div></li>`;
+}
+
+function milestones() {
+  const out = [];
+  for (const p of D.progetti) for (const m of p.stato.milestone || []) out.push({ ...m, progetto: p.nome });
+  return out.sort((a, b) => (a.data || "9999").localeCompare(b.data || "9999"));
+}
+
+function jobProblem(j) { return !j.attivo || (j.ultima_uscita && j.ultima_uscita !== "0") || (j.log || []).some((l) => /ERRORE|errore|bloccato|scaduto/.test(l)); }
+
+/* ---------- viste ---------- */
+function render() {
+  const t = oggi(), P = posts(), M = milestones();
+  // freschezza
+  const gen = new Date(D.generato), ore = (Date.now() - gen) / 36e5;
+  const f = $("#fresh");
+  f.textContent = "Dati " + gen.toLocaleString("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  f.classList.toggle("old", ore > 4);
+  if (ore > 4) f.textContent += " · Mac fermo?";
+
+  // aspettano te
+  const you = [];
+  for (const p of D.progetti) for (const a of p.stato.attesa || []) you.push(`<li><span class="dot wait"></span><div class="main">${esc(a)}<div class="sub">${esc(p.nome)}</div></div></li>`);
+  const daApprovare = P.filter((p) => p.cls === "wait" && p.data >= t);
+  if (daApprovare.length) you.push(`<li><span class="dot wait"></span><div class="main">${daApprovare.length} post del PED da approvare<div class="sub">Scrivi "ok settimana" alla regia</div></div></li>`);
+  const prob = P.filter((p) => p.cls === "bad" && p.data >= addDays(t, -7));
+  for (const p of prob) you.push(postLi(p, true));
+  $("#youList").innerHTML = you.join("") || '<li class="empty">Niente in attesa. Bene così.</li>';
+  $("#tYou").textContent = you.length;
+  $("#nYou").textContent = you.length; $("#nYou").hidden = !you.length;
+
+  // settimana
+  const fine = addDays(t, 7);
+  const week = [
+    ...P.filter((p) => p.data >= t && p.data < fine).map((p) => ({ k: p.quando, h: postLi(p, true) })),
+    ...M.filter((m) => !m.fatto && m.data && m.data >= t && m.data < fine).map((m) => ({ k: m.data + " 00:00", h: `<li><span class="dot plan"></span><span class="when">${esc(fmtDay(m.data))}</span><div class="main"><b>Milestone:</b> ${esc(m.titolo)}<div class="sub">${esc(m.progetto)}</div></div></li>` })),
+  ].sort((a, b) => a.k.localeCompare(b.k));
+  $("#weekList").innerHTML = week.map((w) => w.h).join("") || '<li class="empty">Nessun post o milestone nei prossimi 7 giorni.</li>';
+  $("#tPost").textContent = P.filter((p) => p.data >= t && p.data < fine).length;
+  $("#tMile").textContent = M.filter((m) => !m.fatto).length;
+
+  // script
+  const bad = D.attivita.filter(jobProblem).length;
+  $("#tBad").textContent = bad; $("#tBadTile").classList.toggle("bad", bad > 0); $("#tBadTile").classList.toggle("ok", bad === 0);
+  $("#nBad").textContent = bad; $("#nBad").hidden = !bad;
+  renderJobs();
+
+  // calendario
+  if (!mese) mese = t.slice(0, 7);
+  renderCal();
+
+  // piano
+  $("#miles").innerHTML = M.map((m) => {
+    const late = !m.fatto && m.data && m.data < t;
+    return `<li class="${m.fatto ? "done" : late ? "late" : ""}"><span class="d">${m.data ? esc(fmtDay(m.data)) : "Data da definire"}${late ? " · in ritardo" : ""}</span><span class="t">${esc(m.titolo)}</span><span class="chip" style="align-self:flex-start">${esc(m.progetto)}</span></li>`;
+  }).join("") || '<li class="empty">Nessuna milestone. Aggiungile nella sezione "## Milestone" di STATE.md.</li>';
+  $("#backlog").innerHTML = D.progetti.map((p) => {
+    const b = p.stato.backlog || [], aperti = b.filter((x) => !x.fatto), fatti = b.filter((x) => x.fatto);
+    const li = (x) => `<li><span class="check ${x.fatto ? "on" : ""}" aria-label="${x.fatto ? "fatto" : "da fare"}"></span><div class="main">${esc(x.titolo)}</div></li>`;
+    return `<div><h3>${esc(p.nome)} <span class="chip">${aperti.length} aperti</span></h3><ul class="list">${aperti.map(li).join("") || '<li class="empty">Backlog vuoto.</li>'}</ul>
+      ${fatti.length ? `<details class="done-list"><summary>${fatti.length} completati</summary><ul class="list">${fatti.map(li).join("")}</ul></details>` : ""}</div>`;
+  }).join("");
+
+  // progetti
+  $("#projs").innerHTML = D.progetti.map((p) => {
+    const s = p.stato, pp = P.filter((x) => x.progetto === p.nome);
+    const sez = (titolo, arr, n = 4) => arr && arr.length ? `<div class="mini"><span class="k">${titolo}</span><ul>${arr.slice(0, n).map((x) => `<li>${esc(x.titolo || x)}</li>`).join("")}</ul>${arr.length > n ? `<span class="sub" style="font-size:13px;color:var(--muted)">e altri ${arr.length - n}</span>` : ""}</div>` : "";
+    return `<div class="panel"><header><h2>${esc(p.nome)}</h2><span class="chip">${s.assente ? "STATE.md assente" : "agg. " + esc(s.aggiornato.slice(0, 10))}</span></header>
+      <div class="cta"><span class="pill p-ok">${pp.filter((x) => x.cls === "ok").length} pubblicati</span><span class="pill p-plan">${pp.filter((x) => x.cls === "plan").length} programmati</span>${(s.attesa || []).length ? `<span class="pill p-wait">${s.attesa.length} aspettano te</span>` : ""}</div>
+      ${sez("In attesa di te", s.attesa)}${sez("Prossimi passi", (s.backlog || []).filter((x) => !x.fatto))}${sez("Fatto", s.fatto, 3)}${sez("Decisioni", s.decisioni, 3)}</div>`;
+  }).join("") || '<p class="empty">Nessun progetto in ~/Progetti.</p>';
+
+  // idee
+  const idee = [...D.idee.map((i) => ({ ...i, progetto: "Idee libere" })), ...D.progetti.flatMap((p) => p.idee.map((i) => ({ ...i, progetto: p.nome })))];
+  $("#ideas").innerHTML = idee.map((i) => `<li><span class="dot plan"></span><div class="main"><b>${esc(i.titolo)}</b> <span class="chip">${esc(i.progetto)}</span><div class="sub">${esc(i.estratto)}</div></div></li>`).join("")
+    || '<li class="empty">Ancora nessuna idea salvata. Le ricerche del market-scout finiscono qui.</li>';
+}
+
+function renderCal() {
+  const P = posts(), t = oggi();
+  const [y, m] = mese.split("-").map(Number);
+  const first = new Date(y, m - 1, 1);
+  $("#monthLabel").textContent = first.toLocaleDateString("it-IT", { month: "long", year: "numeric" });
+  const start = new Date(first); start.setDate(1 - ((first.getDay() + 6) % 7));
+  const byDay = {};
+  for (const p of P) (byDay[p.data] ||= []).push(p);
+  let h = ["L", "M", "M", "G", "V", "S", "D"].map((d) => `<div class="dow">${d}</div>`).join("");
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    const s = ymd(d), list = byDay[s] || [];
+    if (i >= 35 && d.getMonth() !== m - 1) break;
+    h += `<button type="button" class="day ${d.getMonth() !== m - 1 ? "out" : ""} ${s === t ? "today" : ""}" data-day="${s}" aria-pressed="${s === giorno}" aria-label="${esc(fmtDay(s))}: ${list.length} post">${d.getDate()}<span class="dots">${list.slice(0, 4).map((p) => `<i class="${p.cls}"></i>`).join("")}</span></button>`;
+  }
+  $("#cal").innerHTML = h;
+  const sel = giorno ? P.filter((p) => p.data === giorno) : P.filter((p) => p.data.startsWith(mese));
+  $("#dayLabel").textContent = giorno ? fmtDay(giorno) : "Tutti i post del mese";
+  $("#allMonth").hidden = !giorno;
+  $("#dayList").innerHTML = sel.map((p) => postLi(p, !giorno)).join("") || `<li class="empty">${giorno ? "Nessun post in questo giorno." : "Nessun post in questo mese."}</li>`;
+}
+
+function renderJobs() {
+  const DESCR = { "coda-social": "Pubblica sui social i post approvati del PED", "dashboard": "Aggiorna questa dashboard" };
+  $("#jobs").innerHTML = D.attivita.map((j) => {
+    const bad = jobProblem(j);
+    const stato = !j.attivo ? ["Non attiva", "bad"] : bad ? ["Da controllare", "bad"] : ["Ok", "ok"];
+    return `<div class="panel job"><header><h2>${esc(DESCR[j.id] || j.id)}</h2><span class="pill p-${stato[1]}">${stato[0]}</span></header>
+      <div class="cta"><span class="chip">${esc(j.quando)}</span><span class="chip">${esc(j.comando)}</span><span class="chip">ultimo log ${esc(j.ultimo_log || "mai")}</span></div>
+      ${j.log && j.log.length ? `<pre class="log">${esc(j.log.join("\n"))}</pre>` : '<p class="empty">Nessun evento registrato.</p>'}</div>`;
+  }).join("") || '<p class="empty">Nessuna attività programmata.</p>';
+}
+
+/* ---------- navigazione ---------- */
+function route() {
+  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "ufficio";
+  document.querySelectorAll("section[data-view]").forEach((s) => s.classList.toggle("on", s.dataset.view === v));
+  document.querySelectorAll("#tabs a").forEach((a) => (a.getAttribute("href") === "#" + v ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
+}
+addEventListener("hashchange", () => { route(); scrollTo(0, 0); });
+$("#cal").addEventListener("click", (e) => { const b = e.target.closest("[data-day]"); if (!b) return; giorno = giorno === b.dataset.day ? null : b.dataset.day; renderCal(); });
+$("#allMonth").addEventListener("click", () => { giorno = null; renderCal(); });
+const shift = (n) => { const [y, m] = mese.split("-").map(Number); const d = new Date(y, m - 1 + n, 1); mese = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; giorno = null; renderCal(); };
+$("#prevM").addEventListener("click", () => shift(-1));
+$("#nextM").addEventListener("click", () => shift(1));
+// torna in primo piano: ricarica i dati
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState !== "visible" || !D) return;
+  try { const nuovo = await carica(); if (nuovo.ct !== pacco.ct) { pacco = nuovo; const s = await keyGet(); if (s && s.salt === pacco.salt) await apri(s.key); } } catch {}
+});
+boot();
+</script>
+</body>
+</html>
